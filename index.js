@@ -12,7 +12,7 @@ const pkg = require('./package.json')
 const web = require('./lib/web')
 const mailserver = require('./lib/mailserver')
 const logger = require('./lib/logger')
-
+const fs = require('fs')
 module.exports = function (config) {
   const version = pkg.version
 
@@ -22,6 +22,7 @@ module.exports = function (config) {
       .version(version)
       .option('-s, --smtp <port>', 'SMTP port to catch emails [1025]', '1025')
       .option('-w, --web <port>', 'Port to run the Web GUI [1080]', '1080')
+      .option('-p, --persist-mails <path>', 'File to persist mails to and load from')
       .option('--ip <ip address>', 'IP Address to bind SMTP service to', '0.0.0.0')
       .option('--outgoing-host <host>', 'SMTP host for outgoing emails')
       .option('--outgoing-port <port>', 'SMTP port for outgoing emails')
@@ -35,6 +36,9 @@ module.exports = function (config) {
       .option('--web-ip <ip address>', 'IP Address to bind HTTP service to, defaults to --ip')
       .option('--web-user <user>', 'HTTP user for GUI')
       .option('--web-pass <password>', 'HTTP password for GUI')
+      .option('--web-secure-key <key>', 'Key file to use when HTTPS is enabled for GUI')
+      .option('--web-secure-cert <cert>', 'Certificate to use when HTTPS is enabled for GUI')
+      .option('--web-secure-ca <ca>', 'Custom CA chain to use when HTTPS is enabled for GUI')
       .option('--base-pathname <path>', 'base path for URLs')
       .option('--disable-web', 'Disable the use of the web interface. Useful for unit testing')
       .option('--hide-extensions <extensions>',
@@ -70,6 +74,10 @@ module.exports = function (config) {
     )
   }
 
+  if(config.persistMails){
+    mailserver.setPersistentMailFolder(config.persistMails);
+    mailserver.loadMailsFromFolder();
+  }
   if (config.autoRelay) {
     const emailAddress = typeof config.autoRelay === 'string' ? config.autoRelay : null
     mailserver.setAutoRelayMode(true, config.autoRelayRules, emailAddress)
@@ -78,7 +86,17 @@ module.exports = function (config) {
   if (!config.disableWeb) {
     // Default to run on same IP as smtp
     const webIp = config.webIp ? config.webIp : config.ip
-    web.start(config.web, webIp, mailserver, config.webUser, config.webPass, config.basePathname)
+  var httpsOptions;
+  if (config.webSecureKey && config.webSecureCert) {
+    httpsOptions = {
+       key: fs.readFileSync(config.webSecureKey,'utf8'),
+       cert: fs.readFileSync(config.webSecureCert,'utf8')
+    };
+    if (config.webSecureCa) {
+      httpsOptions.ca = fs.readFileSync(config.webSecureCa,'utf8')
+    }
+  }
+  web.start(config.web, webIp, mailserver, config.webUser, config.webPass, config.basePathname, httpsOptions);
 
     if (config.open) {
       const open = require('opn')
