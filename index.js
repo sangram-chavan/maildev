@@ -20,8 +20,9 @@ module.exports = function (config) {
     // CLI
     config = program
       .version(version)
-      .option('-s, --smtp <port>', 'SMTP port to catch emails [1025]', '1025')
-      .option('-w, --web <port>', 'Port to run the Web GUI [1080]', '1080')
+      .option('--cfg <path>', 'JSON Configuration file for MailDev')
+      .option('-s, --smtp <port>', 'SMTP port to catch emails [1025]')
+      .option('-w, --web <port>', 'Port to run the Web GUI [1080]')
       .option('-p, --persist-mails <path>', 'File to persist mails to and load from')
       .option('--ip <ip address>', 'IP Address to bind SMTP service to', '0.0.0.0')
       .option('--outgoing-host <host>', 'SMTP host for outgoing emails')
@@ -56,6 +57,19 @@ module.exports = function (config) {
   } else if (config.silent) {
     logger.setLevel(0)
   }
+
+  if(config.cfg){
+    var obj = JSON.parse(fs.readFileSync(config.cfg, 'utf8'));
+    cfgObj = Object.fromEntries(Object.entries(obj).filter(x => x[1] !==""));
+    config = Object.assign({},cfgObj,config);
+  }
+
+  if(!config.smtp)
+    config.smtp = 1025
+
+  if(!config.web)
+    config.web = 1080
+
 
   // Start the Mailserver & Web GUI
   mailserver.create(config.smtp, config.ip, config.incomingUser, config.incomingPass, config.hideExtensions)
