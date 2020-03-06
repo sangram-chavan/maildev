@@ -31,11 +31,27 @@
     "css": "node-sass --output-style compressed -o app/styles assets/styles/style.scss",
     "css-watch": "node-sass -wr --output-style compressed -o app/styles assets/styles/style.scss",
     "docker-build": "docker build -t djfarrelly/maildev:$npm_package_version . && docker tag djfarrelly/maildev:$npm_package_version djfarrelly/maildev:latest",
-    "docker-push": "docker push djfarrelly/maildev:$npm_package_version && docker push djfarrelly/maildev:latest"
+    "docker-push": "docker push djfarrelly/maildev:$npm_package_version && docker push djfarrelly/maildev:latest",
+    "package:alpine": "pkg . -t node12.13.1-alpine-x64 --out-path=./dist/alpine",
+    "package:osx": "pkg . -t node12.13.1-macos-x64 --out-path=./dist/osx",
+    "package:win": "pkg . -t node12.13.1-win-x64 --out-path=./dist/win",
+    "package": "npm-run-all package:*"
   },
   "main": "./index.js",
   "bin": {
     "maildev": "./bin/maildev"
+  },
+  "pkg": {
+    "scripts": [
+      "index.js",
+      "lib/**/*.js",
+      "scripts/**/*.js"
+    ],
+    "assets": [
+      "app/**",
+      "assets/**",
+      "config/**"
+    ]
   },
   "license": "MIT",
   "dependencies": {
@@ -59,7 +75,9 @@
     "node-sass": "^4.12.0",
     "nodemailer": "^6.2.1",
     "nodemon": "^1.19.1",
+    "npm-run-all": "^4.1.5",
     "nyc": "^14.1.1",
+    "pkg": "^4.4.4",
     "standard": "^12.0.1"
   },
   "engines": {
